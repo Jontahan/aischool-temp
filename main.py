@@ -3,6 +3,9 @@ import numpy as np
 import random
 import noise
 
+# Colors
+color_tree = (70, 190, 50)
+
 class Game:
     A_NOP, A_UP, A_DOWN, A_LEFT, A_RIGHT, A_ATK = range(6)
 
@@ -13,8 +16,11 @@ class Game:
         pg.init()
         self.screen = pg.display.set_mode((self.width * self.scale, self.height * self.scale))
         self.clock = pg.time.Clock()
-        self.player = Player((self.width // 2, self.height // 2), self)
-        self.map = np.zeros((self.width, self.height))
+        self.spawn_point = (self.width // 2, self.height // 2)
+        self.player = Player(self.spawn_point, self)
+        
+        self.map_grass = np.zeros((self.width, self.height))
+        self.map_tree = np.zeros((self.width, self.height))
         self.generate_world()
 
     def step(self, action):
@@ -31,7 +37,9 @@ class Game:
         
         for i in range(self.width):
             for j in range(self.height):
-                pg.draw.rect(self.screen, (64, (128 + self.map[i][j] * 128) % 256, 64), (i * self.scale, j * self.scale, self.scale, self.scale))
+                pg.draw.rect(self.screen, (64, (128 + self.map_grass[i][j] * 128) % 256, 64), (i * self.scale, j * self.scale, self.scale, self.scale))
+                if self.map_tree[i][j] == 1:
+                    pg.draw.rect(self.screen, color_tree, (i * self.scale, j * self.scale, self.scale, self.scale))
         
         # Player
         pg.draw.rect(self.screen, (200, 24, 24), (self.player.x * self.scale, self.player.y * self.scale, self.scale, self.scale))
@@ -50,7 +58,7 @@ class Game:
 
         for i in range(self.width):
             for j in range(self.height):
-                self.map[i][j] = noise.pnoise2(
+                self.map_grass[i][j] = noise.pnoise2(
                     i / scale, 
                     j / scale, 
                     octaves=octaves, 
@@ -60,6 +68,11 @@ class Game:
                     repeaty=self.height, 
                     base=0
                 )
+                if self.spawn_point != (i, j) and random.uniform(0, 1) < .1:
+                    self.map_tree[i][j] = 1
+    
+    def is_pos_free(self, pos):
+        return self.map_tree[pos[0]][pos[1]] != 1
 
 class Player:
     DIR_S, DIR_W, DIR_N, DIR_E = range(4)
@@ -70,30 +83,37 @@ class Player:
         self.world = world # To get collision info
 
     def move(self, action):
+        if action == Game.A_NOP:
+            return
+        target_pos = (self.x, self.y)
+
         if action == Game.A_UP:
             if self.facing == self.DIR_N:
-                self.y = (self.y - 1) % self.world.height
+                target_pos = (self.x, (self.y - 1) % self.world.height)
             else:
                 self.facing = self.DIR_N
 
         if action == Game.A_DOWN:
             if self.facing == self.DIR_S:
-                self.y = (self.y + 1) % self.world.height
+                target_pos = (self.x, (self.y + 1) % self.world.height)
             else:
                 self.facing = self.DIR_S
         
         if action == Game.A_LEFT:
             if self.facing == self.DIR_W:
-                self.x = (self.x - 1) % self.world.height
+                target_pos = ((self.x - 1) % self.world.width, self.y)
             else:
                 self.facing = self.DIR_W
 
         if action == Game.A_RIGHT:
             if self.facing == self.DIR_E:
-                self.x = (self.x + 1) % self.world.height
+                target_pos = ((self.x + 1) % self.world.width, self.y)
             else:
                 self.facing = self.DIR_E
             
+        if self.world.is_pos_free(target_pos):
+            self.x, self.y = target_pos
+
 game = Game()
 
 while True:
