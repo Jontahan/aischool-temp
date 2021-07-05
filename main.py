@@ -12,7 +12,7 @@ class Game(gym.Env):
     A_NOP, A_UP, A_DOWN, A_LEFT, A_RIGHT, A_ATK = range(6)
 
     def __init__(self):
-        self.framerate = 10
+        self.framerate = 0
         self.width, self.height = (15, 15)
         self.scale = 40
         pg.init()
@@ -22,7 +22,8 @@ class Game(gym.Env):
         self.clock = pg.time.Clock()
         self.spawn_point = (self.width // 2, self.height // 2)
         self.player = Character(self.spawn_point, self)
-        
+        self.arrows = []
+
         self.map_grass = np.zeros((self.width, self.height))
         self.map_tree = np.zeros((self.width, self.height))
         self.generate_world()
@@ -40,7 +41,16 @@ class Game(gym.Env):
                 pg.quit()
                 sys.exit()
         pg.event.pump()
-        self.player.move(action)
+        
+        if action == self.A_ATK:
+            self.arrows.append(Arrow((self.player.x, self.player.y), self.player.facing, self))    
+        else:
+            self.player.move(action)
+
+        for arrow in self.arrows:
+            arrow.move()
+        self.arrows = list(filter(lambda x: x.active, self.arrows))
+
         for enemy in self.enemies:
             enemy.move(random.choice([Game.A_UP, Game.A_DOWN, Game.A_LEFT, Game.A_RIGHT]))
 
@@ -60,7 +70,9 @@ class Game(gym.Env):
         for enemy in self.enemies:
             self.screen.blit(self.gman.sprites['skeleton'], (enemy.x * self.scale, enemy.y * self.scale), (0, 0, self.scale, self.scale))
         #pg.draw.rect(self.screen, (200, 24, 24), (self.player.x * self.scale, self.player.y * self.scale, self.scale, self.scale))
-
+        for arrow in self.arrows:
+            self.screen.blit(arrow.get_sprite(), (arrow.x * self.scale, arrow.y * self.scale), (0, 0, self.scale, self.scale))
+        
             
         pg.display.flip()
         self.clock.tick(int(self.framerate))
@@ -131,8 +143,42 @@ class Character:
         if self.world.is_pos_free(target_pos):
             self.x, self.y = target_pos
 
+class Arrow:
+    DIR_S, DIR_W, DIR_N, DIR_E = range(4)
+
+    def __init__(self, init_pos, init_dir, world):
+        self.x, self.y = init_pos
+        self.facing = init_dir
+        self.world = world
+        self.active = True
+
+    def move(self):
+        if self.facing == Arrow.DIR_S: 
+            self.y += 1
+        if self.facing == Arrow.DIR_W:
+            self.x -= 1
+        if self.facing == Arrow.DIR_N:
+            self.y -= 1
+        if self.facing == Arrow.DIR_E:
+            self.x += 1
+
+        if self.x not in range(0, self.world.width) or \
+           self.y not in range(0, self.world.height) or \
+           self.world.map_tree[self.x][self.y] == 1:
+            self.active = False
+
+    def get_sprite(self):
+        if self.facing == Arrow.DIR_S: 
+            return pg.transform.rotate(self.world.gman.sprites['arrow'], 180)
+        if self.facing == Arrow.DIR_W:
+            return pg.transform.rotate(self.world.gman.sprites['arrow'], 90)
+        if self.facing == Arrow.DIR_N:
+            return self.world.gman.sprites['arrow']
+        if self.facing == Arrow.DIR_E:
+            return pg.transform.rotate(self.world.gman.sprites['arrow'], 270)
+
 game = Game()
 
 while True:
-    game.step(random.choice([Game.A_UP, Game.A_DOWN, Game.A_LEFT, Game.A_RIGHT]))
+    game.step(random.choice([Game.A_UP, Game.A_DOWN, Game.A_LEFT, Game.A_RIGHT, Game.A_NOP, Game.A_ATK]))
     game.render()
