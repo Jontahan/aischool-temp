@@ -2,6 +2,7 @@ import pygame as pg
 import numpy as np
 import random
 import noise
+from gman import GraphicsManager
 
 # Colors
 color_tree = (70, 190, 50)
@@ -15,6 +16,8 @@ class Game:
         self.scale = 16
         pg.init()
         self.screen = pg.display.set_mode((self.width * self.scale, self.height * self.scale))
+        self.gman = GraphicsManager()
+
         self.clock = pg.time.Clock()
         self.spawn_point = (self.width // 2, self.height // 2)
         self.player = Player(self.spawn_point, self)
@@ -39,10 +42,12 @@ class Game:
             for j in range(self.height):
                 pg.draw.rect(self.screen, (64, (128 + self.map_grass[i][j] * 128) % 256, 64), (i * self.scale, j * self.scale, self.scale, self.scale))
                 if self.map_tree[i][j] == 1:
-                    pg.draw.rect(self.screen, color_tree, (i * self.scale, j * self.scale, self.scale, self.scale))
+                    self.screen.blit(self.gman.sprites['tree'], (i * self.scale, j * self.scale), (0, 0, self.scale, self.scale))
+                    #pg.draw.rect(self.screen, color_tree, (i * self.scale, j * self.scale, self.scale, self.scale))
         
         # Player
-        pg.draw.rect(self.screen, (200, 24, 24), (self.player.x * self.scale, self.player.y * self.scale, self.scale, self.scale))
+        self.screen.blit(self.gman.sprites['person'], (self.player.x * self.scale, self.player.y * self.scale), (0, 0, self.scale, self.scale))
+        #pg.draw.rect(self.screen, (200, 24, 24), (self.player.x * self.scale, self.player.y * self.scale, self.scale, self.scale))
 
             
         pg.display.flip()
