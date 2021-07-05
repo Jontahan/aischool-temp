@@ -4,6 +4,7 @@ import random
 import gym
 import noise
 from gman import GraphicsManager
+from PIL import Image
 
 # Colors
 color_tree = (70, 190, 50)
@@ -27,7 +28,7 @@ class Game(gym.Env):
         self.map_grass = np.zeros((self.width, self.height))
         self.map_tree = np.zeros((self.width, self.height))
         self.generate_world()
-        
+
         self.enemies = []
         for _ in range(5):
             pos = (random.randint(0, self.width - 1), random.randint(0, self.height - 1))
@@ -50,9 +51,19 @@ class Game(gym.Env):
         for arrow in self.arrows:
             arrow.move()
         self.arrows = list(filter(lambda x: x.active, self.arrows))
-
+        
+        n_enemies = len(self.enemies)
         for enemy in self.enemies:
             enemy.move(random.choice([Game.A_UP, Game.A_DOWN, Game.A_LEFT, Game.A_RIGHT]))
+        self.enemies = list(filter(lambda x: x.active, self.enemies))
+        reward = n_enemies - len(self.enemies)
+        
+        self.render()
+        
+        pil_image = Image.frombytes("RGBA", (self.scale * self.width, self.scale * self.height), pg.image.tostring(self.screen,"RGBA", False))
+        done = False
+        
+        return pil_image, reward, done, {}
 
     def render(self, mode='human'):
         # Background
@@ -73,8 +84,8 @@ class Game(gym.Env):
         for arrow in self.arrows:
             self.screen.blit(arrow.get_sprite(), (arrow.x * self.scale, arrow.y * self.scale), (0, 0, self.scale, self.scale))
         
-            
         pg.display.flip()
+        
         self.clock.tick(int(self.framerate))
     
     def generate_world(self):
@@ -110,6 +121,7 @@ class Character:
         self.x, self.y = init_pos
         self.facing = self.DIR_S
         self.world = world # To get collision info
+        self.active = True
 
     def move(self, action):
         if action == Game.A_NOP:
@@ -166,6 +178,12 @@ class Arrow:
            self.y not in range(0, self.world.height) or \
            self.world.map_tree[self.x][self.y] == 1:
             self.active = False
+        
+        for enemy in self.world.enemies:
+            if self.x == enemy.x and self.y == enemy.y:
+                enemy.active = False
+                self.active = False
+            
 
     def get_sprite(self):
         if self.facing == Arrow.DIR_S: 
