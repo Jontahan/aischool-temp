@@ -10,7 +10,9 @@ class GraphicsManager:
         
         self.sprites = {
             'tree' : self.get_tile(tile_sheet, 0, 0),
-            'person' : self.get_tile(creature_sheet, 0, 0)
+            'wall' : self.get_tile(tile_sheet, 1, 1),
+            'person' : self.get_tile(creature_sheet, 0, 0),
+            'skeleton' : self.get_tile(creature_sheet, 0, 6)
         }
 
     def get_tile(self, sheet, x, y):

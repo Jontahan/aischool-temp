@@ -20,11 +20,18 @@ class Game:
 
         self.clock = pg.time.Clock()
         self.spawn_point = (self.width // 2, self.height // 2)
-        self.player = Player(self.spawn_point, self)
+        self.player = Character(self.spawn_point, self)
         
         self.map_grass = np.zeros((self.width, self.height))
         self.map_tree = np.zeros((self.width, self.height))
         self.generate_world()
+        
+        self.enemies = []
+        for _ in range(5):
+            pos = (random.randint(0, self.width - 1), random.randint(0, self.height - 1))
+            while self.map_tree[pos[0]][pos[1]] == 1:
+                pos = (random.randint(0, self.width - 1), random.randint(0, self.height - 1))
+            self.enemies.append(Character(pos, self))
 
     def step(self, action):
         for event in pg.event.get():
@@ -33,6 +40,8 @@ class Game:
                 sys.exit()
         pg.event.pump()
         self.player.move(action)
+        for enemy in self.enemies:
+            enemy.move(random.choice([Game.A_UP, Game.A_DOWN, Game.A_LEFT, Game.A_RIGHT]))
 
     def render(self, mode='human'):
         # Background
@@ -47,6 +56,8 @@ class Game:
         
         # Player
         self.screen.blit(self.gman.sprites['person'], (self.player.x * self.scale, self.player.y * self.scale), (0, 0, self.scale, self.scale))
+        for enemy in self.enemies:
+            self.screen.blit(self.gman.sprites['skeleton'], (enemy.x * self.scale, enemy.y * self.scale), (0, 0, self.scale, self.scale))
         #pg.draw.rect(self.screen, (200, 24, 24), (self.player.x * self.scale, self.player.y * self.scale, self.scale, self.scale))
 
             
@@ -79,12 +90,12 @@ class Game:
     def is_pos_free(self, pos):
         return self.map_tree[pos[0]][pos[1]] != 1
 
-class Player:
+class Character:
     DIR_S, DIR_W, DIR_N, DIR_E = range(4)
 
     def __init__(self, init_pos, world):
         self.x, self.y = init_pos
-        self.facing = Player.DIR_S
+        self.facing = self.DIR_S
         self.world = world # To get collision info
 
     def move(self, action):
