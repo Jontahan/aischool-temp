@@ -15,7 +15,7 @@ class Game(gym.Env):
     def __init__(self):
         self.framerate = 0
         self.width, self.height = (15, 15)
-        self.scale = 40
+        self.scale = 32
         pg.init()
         self.screen = pg.display.set_mode((self.width * self.scale, self.height * self.scale))
         self.gman = GraphicsManager(self.scale)
@@ -34,7 +34,7 @@ class Game(gym.Env):
             pos = (random.randint(0, self.width - 1), random.randint(0, self.height - 1))
             while self.map_tree[pos[0]][pos[1]] == 1:
                 pos = (random.randint(0, self.width - 1), random.randint(0, self.height - 1))
-            self.enemies.append(Character(pos, self))
+            self.enemies.append(Enemy(pos, self))
 
     def step(self, action):
         for event in pg.event.get():
@@ -131,26 +131,86 @@ class Character:
         if action == Game.A_UP:
             if self.facing == self.DIR_N:
                 target_pos = (self.x, (self.y - 1) % self.world.height)
+                if self.world.is_pos_free(target_pos):
+                    self.world.map_grass = np.roll(self.world.map_grass, 1)
+                    self.world.map_tree = np.roll(self.world.map_tree, 1)
+                    for enemy in self.world.enemies:
+                        enemy.move(Game.A_DOWN)
             else:
                 self.facing = self.DIR_N
 
         if action == Game.A_DOWN:
             if self.facing == self.DIR_S:
                 target_pos = (self.x, (self.y + 1) % self.world.height)
+                if self.world.is_pos_free(target_pos):
+                    self.world.map_grass = np.roll(self.world.map_grass, -1)
+                    self.world.map_tree = np.roll(self.world.map_tree, -1)
+                    for enemy in self.world.enemies:
+                        enemy.move(Game.A_UP)
+
             else:
                 self.facing = self.DIR_S
         
         if action == Game.A_LEFT:
             if self.facing == self.DIR_W:
                 target_pos = ((self.x - 1) % self.world.width, self.y)
+                if self.world.is_pos_free(target_pos):
+                    self.world.map_grass = np.roll(self.world.map_grass, 1, axis=0)
+                    self.world.map_tree = np.roll(self.world.map_tree, 1, axis=0)
+                    for enemy in self.world.enemies:
+                        enemy.move(Game.A_RIGHT)
             else:
                 self.facing = self.DIR_W
 
         if action == Game.A_RIGHT:
             if self.facing == self.DIR_E:
                 target_pos = ((self.x + 1) % self.world.width, self.y)
+                if self.world.is_pos_free(target_pos):
+                    self.world.map_grass = np.roll(self.world.map_grass, -1, axis=0)
+                    self.world.map_tree = np.roll(self.world.map_tree, -1, axis=0)
+                    for enemy in self.world.enemies:
+                        enemy.move(Game.A_LEFT)
             else:
                 self.facing = self.DIR_E
+
+
+
+class Enemy(Character):
+    DIR_S, DIR_W, DIR_N, DIR_E = range(4)
+
+
+    def move(self, action):
+        if action == Game.A_NOP:
+            return
+        target_pos = (self.x, self.y)
+
+        if action == Game.A_UP:
+            if self.facing == self.DIR_N:
+                target_pos = (self.x, (self.y - 1) % self.world.height)
+            else:
+                self.facing = self.DIR_N
+
+        if action == Game.A_DOWN:
+            if self.facing == self.DIR_S:
+                target_pos = (self.x, (self.y + 1) % self.world.height)
+
+            else:
+                self.facing = self.DIR_S
+        
+        if action == Game.A_LEFT:
+            if self.facing == self.DIR_W:
+                target_pos = ((self.x - 1) % self.world.width, self.y)
+
+            else:
+                self.facing = self.DIR_W
+
+        if action == Game.A_RIGHT:
+            if self.facing == self.DIR_E:
+                target_pos = ((self.x + 1) % self.world.width, self.y)
+
+            else:
+                self.facing = self.DIR_E
+
             
         if self.world.is_pos_free(target_pos):
             self.x, self.y = target_pos
