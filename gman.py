@@ -2,9 +2,11 @@ import os
 import pygame as pg
 
 class GraphicsManager:
-    def __init__(self):
+    def __init__(self, scale):
         pwd = os.path.dirname(os.path.realpath(__file__))
-        self.scale = 16
+        self.scale = scale
+
+        self.src_scale = 16
         tile_sheet = pg.image.load(os.path.join(pwd, 'res', 'rogueliketiles.png'))
         creature_sheet = pg.image.load(os.path.join(pwd, 'res', 'roguelikecreatures.png'))
         
@@ -16,6 +18,6 @@ class GraphicsManager:
         }
 
     def get_tile(self, sheet, x, y):
-        tile = pg.Surface((self.scale, self.scale), pg.SRCALPHA)
-        tile.blit(sheet, (0, 0), pg.Rect(self.scale * x, self.scale * y, self.scale, self.scale))
-        return tile
+        tile = pg.Surface((self.src_scale, self.src_scale), pg.SRCALPHA)
+        tile.blit(sheet, (0, 0), pg.Rect(self.src_scale * x, self.src_scale * y, self.src_scale, self.src_scale))
+        return pg.transform.scale(tile, (self.scale, self.scale))

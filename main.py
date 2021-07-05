@@ -1,22 +1,23 @@
 import pygame as pg
 import numpy as np
 import random
+import gym
 import noise
 from gman import GraphicsManager
 
 # Colors
 color_tree = (70, 190, 50)
 
-class Game:
+class Game(gym.Env):
     A_NOP, A_UP, A_DOWN, A_LEFT, A_RIGHT, A_ATK = range(6)
 
     def __init__(self):
         self.framerate = 10
-        self.width, self.height = (16, 16)
-        self.scale = 16
+        self.width, self.height = (15, 15)
+        self.scale = 40
         pg.init()
         self.screen = pg.display.set_mode((self.width * self.scale, self.height * self.scale))
-        self.gman = GraphicsManager()
+        self.gman = GraphicsManager(self.scale)
 
         self.clock = pg.time.Clock()
         self.spawn_point = (self.width // 2, self.height // 2)
